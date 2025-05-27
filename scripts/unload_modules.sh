@@ -11,7 +11,7 @@ if [ "$(id -u)" != "0" ]; then
   exit 1
 fi
 
-MPATH="/lib/modules/$(uname -r)/extra"
+MPATH="/lib/modules/$(uname -r)/updates"
 rmmod $MPATH/x8h7_can.ko
 rmmod $MPATH/x8h7_gpio.ko
 rmmod $MPATH/x8h7_adc.ko

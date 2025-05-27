@@ -6,7 +6,7 @@
 # modules allowing to access the extended IO interfaces
 # provided by the STM32H7.
 
-MPATH="/lib/modules/$(uname -r)/extra"
+MPATH="/lib/modules/$(uname -r)/updates"
 modprobe industrialio
 insmod $MPATH/x8h7_can.ko
 insmod $MPATH/x8h7_gpio.ko

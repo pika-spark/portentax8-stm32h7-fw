@@ -7,6 +7,6 @@
 # of following modules is to provide basic spi access to STM
 # and read firmware version from it.
 
-MPATH="/lib/modules/$(uname -r)/extra"
+MPATH="/lib/modules/$(uname -r)/updates"
 insmod $MPATH/x8h7_drv.ko
 insmod $MPATH/x8h7_h7.ko
