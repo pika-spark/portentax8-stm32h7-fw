@@ -18,9 +18,9 @@ do
     fi
 done
 
-sudo -u fio dd if=/usr/arduino/extra/STM32H747AII6_CM7.bin of=/tmp/version bs=1 count=40 skip=$((0x40000))
+dd if=/usr/arduino/extra/STM32H747AII6_CM7.bin of=/tmp/version bs=1 count=40 skip=$((0x40000))
 FIRMWARE_H7_ON_LINUX=$(strings /tmp/version | head -n1)
-sudo -u fio rm /tmp/version
+rm /tmp/version
 
 if [ "$FIRMWARE_H7_ON_MCU" = "$FIRMWARE_H7_ON_LINUX" ]; then
   echo "Firmware on H7 matches firmware stored on X8. No Update."
