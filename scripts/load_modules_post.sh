@@ -6,12 +6,12 @@
 # modules allowing to access the extended IO interfaces
 # provided by the STM32H7.
 
-MPATH="/lib/modules/$(uname -r)/updates"
+
 modprobe industrialio
-insmod $MPATH/x8h7_can.ko
-insmod $MPATH/x8h7_gpio.ko
-insmod $MPATH/x8h7_adc.ko
-insmod $MPATH/x8h7_rtc.ko
-insmod $MPATH/x8h7_pwm.ko
-insmod $MPATH/x8h7_uart.ko
-insmod $MPATH/x8h7_ui.ko
+modprobe x8h7_can
+modprobe x8h7_gpio
+modprobe x8h7_adc
+modprobe x8h7_rtc
+modprobe x8h7_pwm
+modprobe x8h7_uart
+modprobe x8h7_ui
