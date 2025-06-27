@@ -9,4 +9,5 @@
 
 
 modprobe x8h7_drv
+modprobe x8h7_reset
 modprobe x8h7_h7
