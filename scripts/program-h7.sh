@@ -5,6 +5,35 @@
 #echo 10 > /sys/class/gpio/export # NRST
 #echo 11 > /sys/class/gpio/export # BOOT0
 
+X8H7_STATUS_FILE="/sys/kernel/x8h7_firmware/set_up"
+WAIT_TIMEOUT=300
+TIME_WAITED=0
+
+echo "STARTED - programx8h7"
+# Wait for the x8h7_ready file to be created
+while [ ! -f "$X8H7_STATUS_FILE" ]; do
+    if [ "$TIME_WAITED" -ge "$WAIT_TIMEOUT" ]; then
+        echo "Error: Timed out waiting for $X8H7_STATUS_FILE to be created." >&2
+        exit 1
+    fi
+    echo "waiting for file"
+    sleep 0.1
+    TIME_WAITED=$((TIME_WAITED + 1))
+done
+
+cat $X8H7_STATUS_FILE
+# Wait for the modules to say all is ready
+while [ "$(cat $X8H7_STATUS_FILE)" != "ready" ]; do
+    if [ "$TIME_WAITED" -ge "$WAIT_TIMEOUT" ]; then
+        echo "Error: Timed out waiting for modules to become ready." >&2
+        exit 1
+    fi
+    echo "Modules not ready yet, waiting..."
+    sleep 0.1
+    TIME_WAITED=$((TIME_WAITED + 1))
+done
+
+sleep 1
 # Try at least three times to read firmware version from sysfs
 for i in 1 2 3 4 5 6 7 8 9 10
 do
