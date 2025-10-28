@@ -369,12 +369,7 @@ void dma_load(bool const swap_tx_buf)
 
 void EXTI15_10_IRQHandler(void)
 {
-  /* PA15 = nCS */
-  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_15) == GPIO_PIN_SET && LL_EXTI_ReadFlag_0_31(LL_EXTI_LINE_15)) {
-    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_15);
-  } else {
-    gpio_handle_irq();
-  }
+  gpio_handle_irq();
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
@@ -408,6 +403,7 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 
   /* Preload buffers for next communication. */
   dma_load(false);
+  clean_dma_buffer();
   set_nirq_high();
 }
 

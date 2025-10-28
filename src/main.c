@@ -136,7 +136,7 @@ int main(void)
 
   watchdog_init(IWDG_PRESCALER_16);
 
-  gpio_init_ncs();
+  //gpio_init_ncs();
 
   for(;;) {
     handle_data();
