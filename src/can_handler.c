@@ -128,6 +128,10 @@ static void
 enable_can1_isolated_driver();
 static void
 enable_can2_isolated_driver();
+static void
+disable_can1_isolated_driver();
+static void
+disable_can2_isolated_driver();
 
 /**************************************************************************************
  * FUNCTION DEFINITION
@@ -307,8 +311,16 @@ int on_CAN_DEINIT_Request(FDCAN_HandleTypeDef * handle)
 {
   can_deinit(handle);
 
-  if      (handle == &fdcan_1) is_can1_init = false;
-  else if (handle == &fdcan_2) is_can2_init = false;
+  if (handle == &fdcan_1)
+  {
+    is_can1_init = false;
+    disable_can1_isolated_driver();
+  }
+  else if (handle == &fdcan_2)
+  {
+    is_can2_init = false;
+    disable_can2_isolated_driver();
+  }
 
   return 0;
 }
@@ -421,4 +433,16 @@ enable_can2_isolated_driver()
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+}
+
+void
+disable_can1_isolated_driver()
+{
+  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_8, GPIO_PIN_SET);
+}
+
+void
+disable_can2_isolated_driver()
+{
+  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_6, GPIO_PIN_SET);
 }
