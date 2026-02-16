@@ -16,8 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef PORTENTAX8_STM32H7_FW_CAN_HANDLER_H
-#define PORTENTAX8_STM32H7_FW_CAN_HANDLER_H
+#pragma once
 
 /**************************************************************************************
  * INCLUDE
@@ -29,9 +28,17 @@
  * FUNCTION DECLARATION
  **************************************************************************************/
 
-int can_handle_data();
+int
+can_handle_data();
 
-int fdcan1_handler(uint8_t const opcode, uint8_t const * data, uint16_t const size);
-int fdcan2_handler(uint8_t const opcode, uint8_t const * data, uint16_t const size);
+int
+fdcan1_handler(
+  uint8_t const opcode,
+  uint8_t const * data,
+  uint16_t const size);
 
-#endif /* PORTENTAX8_STM32H7_FW_CAN_HANDLER_H */
+int
+fdcan2_handler(
+  uint8_t const opcode,
+  uint8_t const * data,
+  uint16_t const size);

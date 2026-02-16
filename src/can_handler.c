@@ -114,21 +114,67 @@ static uint32_t can_1_last_enqueue = 0;
 static uint32_t can_2_last_enqueue = 0;
 
 /**************************************************************************************
- * FUNCTION DECLARATION
+ * PRIVATE FUNCTION DECLARATION
  **************************************************************************************/
 
-static int fdcan_handler(FDCAN_HandleTypeDef * handle, uint8_t const opcode, uint8_t const * data, uint16_t const size);
-static int on_CAN_INIT_Request(FDCAN_HandleTypeDef * handle, uint32_t const baud_rate_prescaler, uint32_t const time_segment_1, uint32_t const time_segment_2, uint32_t const sync_jump_width);
-static int on_CAN_DEINIT_Request(FDCAN_HandleTypeDef * handle);
-static int on_CAN_SET_BITTIMING_Request(FDCAN_HandleTypeDef * handle, uint32_t const baud_rate_prescaler, uint32_t const time_segment_1, uint32_t const time_segment_2, uint32_t const sync_jump_width);
-static int on_CAN_FILTER_Request(FDCAN_HandleTypeDef * handle, uint32_t const filter_index, uint32_t const id, uint32_t const mask);
-static int on_CAN_TX_FRAME_Request(FDCAN_HandleTypeDef * handle, union x8h7_can_frame_message const * msg);
+static int
+fdcan_handler(
+  FDCAN_HandleTypeDef * handle,
+  uint8_t const opcode,
+  uint8_t const * data,
+  uint16_t const size);
+
+static int
+on_CAN_INIT_Request(
+  FDCAN_HandleTypeDef * handle,
+  uint32_t const baud_rate_prescaler,
+  uint32_t const time_segment_1,
+  uint32_t const time_segment_2,
+  uint32_t const sync_jump_width);
+
+static void
+enable_can1_isolated_driver();
+
+static void
+enable_can2_isolated_driver();
+
+static int
+on_CAN_DEINIT_Request(
+  FDCAN_HandleTypeDef * handle);
+
+
+static void
+disable_can1_isolated_driver();
+
+static void
+disable_can2_isolated_driver();
+
+static int
+on_CAN_SET_BITTIMING_Request(
+  FDCAN_HandleTypeDef * handle,
+  uint32_t const baud_rate_prescaler,
+  uint32_t const time_segment_1,
+  uint32_t const time_segment_2,
+  uint32_t const sync_jump_width);
+
+static int
+on_CAN_FILTER_Request(
+  FDCAN_HandleTypeDef * handle,
+  uint32_t const filter_index,
+  uint32_t const id,
+  uint32_t const mask);
+
+static int
+on_CAN_TX_FRAME_Request(
+  FDCAN_HandleTypeDef * handle,
+  union x8h7_can_frame_message const * msg);
 
 /**************************************************************************************
- * FUNCTION DEFINITION
+ * PUBLIC FUNCTION DEFINITION
  **************************************************************************************/
 
-int can_handle_data()
+int
+can_handle_data()
 {
   int bytes_enqueued = 0;
   uint32_t can_id = 0;
@@ -202,21 +248,38 @@ int can_handle_data()
   return bytes_enqueued;
 }
 
-int fdcan1_handler(uint8_t const opcode, uint8_t const * data, uint16_t const size)
+int
+fdcan1_handler(
+  uint8_t const opcode,
+  uint8_t const * data,
+  uint16_t const size)
 {
   dbg_printf("fdcan1_handler\n");
   if (!is_can1_init && opcode != CAN_INIT) return 0;
   else return fdcan_handler(&fdcan_1, opcode, data, size);
 }
 
-int fdcan2_handler(uint8_t const opcode, uint8_t const * data, uint16_t const size)
+int
+fdcan2_handler(
+  uint8_t const opcode,
+  uint8_t const * data,
+  uint16_t const size)
 {
   dbg_printf("fdcan2_handler\n");
   if (!is_can2_init && opcode != CAN_INIT) return 0;
   else return fdcan_handler(&fdcan_2, opcode, data, size);
 }
 
-int fdcan_handler(FDCAN_HandleTypeDef * handle, uint8_t const opcode, uint8_t const * data, uint16_t const size)
+/**************************************************************************************
+ * PRIVATE FUNCTION DEFINITION
+ **************************************************************************************/
+
+int
+fdcan_handler(
+  FDCAN_HandleTypeDef * handle,
+  uint8_t const opcode,
+  uint8_t const * data,
+  uint16_t const size)
 {
   if (opcode == CAN_INIT)
   {
@@ -271,11 +334,13 @@ int fdcan_handler(FDCAN_HandleTypeDef * handle, uint8_t const opcode, uint8_t co
   }
 }
 
-/**************************************************************************************
- * FUNCTION DEFINITION
- **************************************************************************************/
-
-int on_CAN_INIT_Request(FDCAN_HandleTypeDef * handle, uint32_t const baud_rate_prescaler, uint32_t const time_segment_1, uint32_t const time_segment_2, uint32_t const sync_jump_width)
+int
+on_CAN_INIT_Request(
+  FDCAN_HandleTypeDef * handle,
+  uint32_t const baud_rate_prescaler,
+  uint32_t const time_segment_1,
+  uint32_t const time_segment_2,
+  uint32_t const sync_jump_width)
 {
   can_init(handle,
            (handle == &fdcan_1) ? CAN_1 : CAN_2,
@@ -284,39 +349,110 @@ int on_CAN_INIT_Request(FDCAN_HandleTypeDef * handle, uint32_t const baud_rate_p
            time_segment_2,
            sync_jump_width);
 
-  if      (handle == &fdcan_1) is_can1_init = true;
-  else if (handle == &fdcan_2) is_can2_init = true;
+  if (handle == &fdcan_1)
+  {
+    is_can1_init = true;
+    enable_can1_isolated_driver();
+  }
+  else if (handle == &fdcan_2)
+  {
+    is_can2_init = true;
+    enable_can2_isolated_driver();
+  }
 
   return 0;
 }
 
-int on_CAN_DEINIT_Request(FDCAN_HandleTypeDef * handle)
+void
+enable_can1_isolated_driver()
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  __HAL_RCC_GPIOF_CLK_ENABLE();
+  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_8, GPIO_PIN_RESET);
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+}
+
+void
+enable_can2_isolated_driver()
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  __HAL_RCC_GPIOF_CLK_ENABLE();
+  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_6, GPIO_PIN_RESET);
+  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+}
+
+int
+on_CAN_DEINIT_Request(
+  FDCAN_HandleTypeDef * handle)
 {
   can_deinit(handle);
 
-  if      (handle == &fdcan_1) is_can1_init = false;
-  else if (handle == &fdcan_2) is_can2_init = false;
+  if (handle == &fdcan_1)
+  {
+    is_can1_init = false;
+    disable_can1_isolated_driver();
+  }
+  else if (handle == &fdcan_2)
+  {
+    is_can2_init = false;
+    disable_can2_isolated_driver();
+  }
 
   return 0;
 }
 
-int on_CAN_SET_BITTIMING_Request(FDCAN_HandleTypeDef * handle, uint32_t const baud_rate_prescaler, uint32_t const time_segment_1, uint32_t const time_segment_2, uint32_t const sync_jump_width)
+void
+disable_can1_isolated_driver()
 {
-  return can_set_bittiming(handle,
-                           baud_rate_prescaler,
-                           time_segment_1,
-                           time_segment_2,
-                           sync_jump_width);
+  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_8, GPIO_PIN_SET);
 }
 
-int on_CAN_FILTER_Request(FDCAN_HandleTypeDef * handle, uint32_t const filter_index, uint32_t const id, uint32_t const mask)
+void
+disable_can2_isolated_driver()
+{
+  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_6, GPIO_PIN_SET);
+}
+
+int
+on_CAN_SET_BITTIMING_Request(
+  FDCAN_HandleTypeDef * handle,
+  uint32_t const baud_rate_prescaler,
+  uint32_t const time_segment_1,
+  uint32_t const time_segment_2,
+  uint32_t const sync_jump_width)
+{
+  return can_set_bittiming(
+    handle,
+    baud_rate_prescaler,
+    time_segment_1,
+    time_segment_2,
+    sync_jump_width);
+}
+
+int
+on_CAN_FILTER_Request(
+  FDCAN_HandleTypeDef * handle,
+  uint32_t const filter_index,
+  uint32_t const id,
+  uint32_t const mask)
 {
   if (!can_filter(handle, filter_index, id, mask, id & CAN_EFF_FLAG))
     dbg_printf("fdcan2_handler: can_filter failed for idx: %ld, id: %lX, mask: %lX\n", filter_index, id, mask);
   return 0;
 }
 
-int on_CAN_TX_FRAME_Request(FDCAN_HandleTypeDef * handle, union x8h7_can_frame_message const * msg)
+int
+on_CAN_TX_FRAME_Request(
+  FDCAN_HandleTypeDef * handle,
+  union x8h7_can_frame_message const * msg)
 {
   if (!can_tx_fifo_available(handle))
   {
@@ -333,25 +469,40 @@ int on_CAN_TX_FRAME_Request(FDCAN_HandleTypeDef * handle, union x8h7_can_frame_m
   return 0;
 }
 
-void HAL_FDCAN_TxBufferCompleteCallback(FDCAN_HandleTypeDef * handle, uint32_t BufferIndexes)
+/**************************************************************************************
+ * HAL FUNCTION DEFINITION
+ **************************************************************************************/
+
+void
+HAL_FDCAN_TxBufferCompleteCallback(
+  FDCAN_HandleTypeDef * handle,
+  uint32_t BufferIndexes)
 {
   uint8_t x8_msg[2] = {X8H7_CAN_STS_INT_TX_COMPLETE, BufferIndexes};
   enqueue_packet(handle == &fdcan_1 ? PERIPH_FDCAN1 : PERIPH_FDCAN2, CAN_STATUS, sizeof(x8_msg), x8_msg);
 }
 
-void HAL_FDCAN_TxBufferAbortCallback(FDCAN_HandleTypeDef * handle, uint32_t BufferIndexes)
+void
+HAL_FDCAN_TxBufferAbortCallback(
+  FDCAN_HandleTypeDef * handle,
+  uint32_t BufferIndexes)
 {
   uint8_t x8_msg[2] = {X8H7_CAN_STS_INT_TX_ABORT_COMPLETE, BufferIndexes};
   enqueue_packet(handle == &fdcan_1 ? PERIPH_FDCAN1 : PERIPH_FDCAN2, CAN_STATUS, sizeof(x8_msg), x8_msg);
 }
 
-void HAL_FDCAN_TxFifoEmptyCallback(FDCAN_HandleTypeDef * handle)
+void
+HAL_FDCAN_TxFifoEmptyCallback(
+  FDCAN_HandleTypeDef * handle)
 {
   uint8_t x8_msg[2] = {X8H7_CAN_STS_INT_TX_FIFO_EMPTY, can_tx_fifo_available(handle)};
   enqueue_packet(handle == &fdcan_1 ? PERIPH_FDCAN1 : PERIPH_FDCAN2, CAN_STATUS, sizeof(x8_msg), x8_msg);
 }
 
-void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
+void
+HAL_FDCAN_RxFifo0Callback(
+  FDCAN_HandleTypeDef *hfdcan,
+  uint32_t RxFifo0ITs)
 {
   uint32_t can_id = 0;
   uint8_t can_len = 0;
